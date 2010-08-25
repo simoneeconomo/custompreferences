@@ -1,6 +1,6 @@
 # Custom Preferences
 
-## Stop talking about Static Sections, Custom Preferences are come!
+## Stop talking about "Static Sections" to your client, Custom Preferences are come!
 
 This extension enables a custom preferences page that allows you to edit static sections as if they were system preferences. The purpose of this extension is to provide authors with a nice interface for editing static content that can then be grabbed as a datasource to fill up your pages.
 
