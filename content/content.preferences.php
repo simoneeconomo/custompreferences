@@ -1,6 +1,6 @@
 <?php
 
-	require_once(DOCROOT . '/symphony/content/content.systempreferences.php');
+	require_once(CONTENT . '/content.systempreferences.php');
 	require_once(TOOLKIT . '/class.sectionmanager.php');
 	require_once(TOOLKIT . '/class.entrymanager.php');
 
@@ -14,6 +14,8 @@
 			$this->setTitle(__('%1$s &ndash; %2$s', array(__('Symphony'), __('Custom Preferences'))));
 		}
 
+		## Sections must be both static and hidden
+
 		private function __getSections() {
 			return Symphony::Database()->fetch("
 				SELECT * from `tbl_sections`
@@ -21,11 +23,18 @@
 			");
 		}
 
-		private function __fieldset($field, $entry) {
+		## Creates a fieldset for each `Publish Tabs` field.
+		## If there's no one, an "Untitled" fieldset is created.
+
+		private function __makeFieldsetLabel($field, $entry) {
 			$group = new XMLElement('fieldset');
 			$group->setAttribute('class', 'settings');
 			$group->appendChild(new XMLElement('legend', $field->get('label')));
 
+			return $group;
+		}
+
+		private function __makeFieldsetContent($field, $entry, $group) {
 			$div = new XMLElement('div', NULL, array(
 				'id' => $field->get('id'),
 				'class' => 'field field-'.$field->handle().($field->get('required') == 'yes' ? ' required' : '')
@@ -39,8 +48,6 @@
 			);
 
 			$group->appendChild($div);
-
-			return $group;
 		}
 
 		public function view() {
@@ -56,12 +63,12 @@
 				$this->pageAlert(__('Preferences saved.'), Alert::SUCCESS);
 			}
 
-			$staticsections = $this->__getSections();
-			$currentsection = isset($this->_context[0]) ? $this->_context[0] : $staticsections[0]['id'];
+			$sections = $this->__getSections();
+			$currentsection = isset($this->_context[0]) ? $this->_context[0] : $sections[0]['id'];
 
-			$sections = new XMLElement('ul', NULL, array('class' => 'tabs staticsections', 'id' => 'publish-tabs-controls'));
+			$menu = new XMLElement('ul', NULL, array('class' => 'tabs staticsections', 'id' => 'publish-tabs-controls'));
 
-			foreach ($staticsections as $s) {
+			foreach ($sections as $s) {
 				$link = new XMLElement('a', $s['name'], array(
 					'href' => URL . '/symphony/extension/custompreferences/preferences/' . $s['id'],
 				));
@@ -71,12 +78,10 @@
 				$listitem = new XMLElement('li', NULL, $attrs);
 				$listitem->appendChild($link);
 
-				$sections->appendChild($listitem);
+				$menu->appendChild($listitem);
 			}
 
-			$this->Form->appendChild($sections);
-
-#			$this->appendSubheading(__('Custom Preferences'));
+			$this->Form->appendChild($menu);
 
 			$sectionManager = new SectionManager($this->_Parent);
 			$fields = $sectionManager->fetch($currentsection)->fetchFields();
@@ -98,23 +103,37 @@
 						$e->setDataFromPost($postfields, $error, true);
 						$entry = $e;
 					}
-				}
-				else {
+				} else {
 					if (isset($_POST['fields'])) {
 						$entry = $entryManager->create();
 						$entry->set('section_id', $section_id);
 						$entry->setDataFromPost($_POST['fields'], $error, true);
-					}
-
-					else {
+					} else {
 						$entry = $entryManager->create();
 						$entry->set('section_id', $section_id);
 					}
 				}
 
-				foreach ($fields as $f) $this->Form->appendChild($this->__fieldset($f, $entry));
-			}
-			else {
+				$group = null;
+
+				foreach ($fields as $f) {
+					$type = $f->get('type');
+
+					if ($group == null && $type != 'publish_tabs') {
+						$group = new XMLElement('fieldset');
+						$group->setAttribute('class', 'settings');
+						$group->appendChild(new XMLElement('legend', __('Untitled')));
+						$this->Form->appendChild($group);
+					}
+
+					if ($type == 'publish_tabs') {
+						$group = $this->__makeFieldsetLabel($f, $entry);
+						$this->Form->appendChild($group);
+					 } else
+						$this->__makeFieldsetContent($f, $entry, $group);
+				}
+
+			} else {
 				$message = new XMLElement('p', __(
 					'It looks like you\'re trying to create an entry. Perhaps you want fields first? <a href="%s">Click here to create some.</a>',
 					array(
@@ -139,8 +158,8 @@
 
 				if (!is_array($this->_errors) || empty($this->_errors)) {
 
-					$staticsections = $this->__getSections();
-					$currentsection = isset($this->_context[0]) ? $this->_context[0] : $staticsections[0]['id'];
+					$sections = $this->__getSections();
+					$currentsection = isset($this->_context[0]) ? $this->_context[0] : $sections[0]['id'];
 
 					$entryManager = new EntryManager($this->_Parent);
 					$entry = $entryManager->fetch(NULL, $currentsection);
@@ -149,8 +168,7 @@
 					if (isset($entry)) {
 						$post = General::getPostData();
 						$fields = $post['fields'];
-					}
-					else {
+					} else {
 						$entry =& $entryManager->create();
 						$entry->set('section_id', $currentsection);
 						$entry->set('author_id', $this->_Parent->Author->get('id'));
@@ -160,26 +178,26 @@
 						$fields = $_POST['fields'];
 					}
 
-					## Combine FILES and POST arrays, indexed by their custom field handles
-					if(isset($_FILES['fields'])){
-						$filedata = General::processFilePostData($_FILES['fields']);
+#					## Combine FILES and POST arrays, indexed by their custom field handles
+#					if(isset($_FILES['fields'])){
+#						$filedata = General::processFilePostData($_FILES['fields']);
 
-						foreach($filedata as $handle => $data){
-							if(!isset($fields[$handle])) $fields[$handle] = $data;
-							elseif(isset($data['error']) && $data['error'] == 4) $fields['handle'] = NULL;
-							else{
+#						foreach($filedata as $handle => $data){
+#							if(!isset($fields[$handle])) $fields[$handle] = $data;
+#							elseif(isset($data['error']) && $data['error'] == 4) $fields['handle'] = NULL;
+#							else{
 
-								foreach($data as $ii => $d){
-									if(isset($d['error']) && $d['error'] == 4) $fields[$handle][$ii] = NULL;
-									elseif(is_array($d) && !empty($d)){
+#								foreach($data as $ii => $d){
+#									if(isset($d['error']) && $d['error'] == 4) $fields[$handle][$ii] = NULL;
+#									elseif(is_array($d) && !empty($d)){
 
-										foreach($d as $key => $val)
-											$fields[$handle][$ii][$key] = $val;
-									}
-								}
-							}
-						}
-					}
+#										foreach($d as $key => $val)
+#											$fields[$handle][$ii][$key] = $val;
+#									}
+#								}
+#							}
+#						}
+#					}
 
 					if(__ENTRY_FIELD_ERROR__ == $entry->checkPostData($fields, $this->_errors)) {
 						$this->pageAlert(__('Some errors were encountered while attempting to save.'), Alert::ERROR);
@@ -197,9 +215,7 @@
 						if(!$entry->commit()) {
 							define_safe('__SYM_DB_INSERT_FAILED__', true);
 							$this->pageAlert(NULL, Alert::ERROR);
-						}
-
-						else {
+						} else {
 
 							###
 							# Delegate: EntryPostEdit

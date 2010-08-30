@@ -6,12 +6,11 @@
 
 		public function about(){
 			return array('name' => 'Custom Preferences',
-						 'version' => '0.1',
-						 'release-date' => '2010-08-25',
+						 'version' => '0.2',
+						 'release-date' => '2010-08-30',
 						 'author' => array('name' => 'Simone Economo',
 										   'website' => 'http://www.lineheight.net',
 										   'email' => 'my.ekoes@gmail.com'),
-						 'description' => 'Stop talking about Static Sections, Custom Preferences are come!'
 				 		);
 		}
 
@@ -57,7 +56,7 @@
 				if(!$this->__isEnabled($static_section) || !$this->__isEnabled($publish_tabs)) {
 
 					Administration::instance()->Page->Alert = new Alert(
-						__('%s depends on both <code>%s</code> and <code>%s</code>. Make sure you have these extension installed and enabled.', array(__('Custom Preferences'), __('Static Section'), __('Publish Tabs'))), 
+						__('<code>Custom Preferences</code> depends on both <code>%s</code> and <code>%s</code>. Make sure you have these extension installed and enabled.', array(__('Static Section'), __('Publish Tabs'))), 
 						Alert::ERROR
 					);
 
