@@ -6,12 +6,13 @@
 
 		public function about(){
 			return array('name' => 'Custom Preferences',
-						 'version' => '0.2',
-						 'release-date' => '2010-08-30',
-						 'author' => array('name' => 'Simone Economo',
-										   'website' => 'http://www.lineheight.net',
-										   'email' => 'my.ekoes@gmail.com'),
-				 		);
+						 'version' => '0.2.1',
+						 'author' => array(
+							'name' => 'Simone Economo',
+							'website' => 'http://www.lineheight.net',
+							'email' => 'my.ekoes@gmail.com'
+						 ),
+					);
 		}
 
 		public function fetchNavigation() {
@@ -31,36 +32,22 @@
 					'delegate' => 'AppendPageAlert', 
 					'callback' => 'dependenciesCheck'
 				),
-				array(
-					'page' => '/backend/',
-					'delegate' => 'InitaliseAdminPageHead',
-					'callback' => 'preferences'
-				),
 			);
 		}
 
-		private function __isEnabled($status) {
-			return ($status != EXTENSION_NOT_INSTALLED && $status != EXTENSION_DISABLED);
-		}
-
 		public function dependenciesCheck($context) {
-			$callback = $this->_Parent->getPageCallback();
+			$ExtensionManager = $this->_Parent->ExtensionManager;
 
-			if($callback['driver'] == 'systemextensions') {
+			$static_section = $ExtensionManager->fetchStatus('static_section');
+			$publish_tabs = $ExtensionManager->fetchStatus('publish_tabs');
 
-				$ExtensionManager = new ExtensionManager(Administration::instance());
+			if($static_section != EXTENSION_ENABLED || $publish_tabs != EXTENSION_ENABLED) {
 
-				$static_section = $ExtensionManager->fetchStatus('static_section');
-				$publish_tabs = $ExtensionManager->fetchStatus('publish_tabs');
+				Administration::instance()->Page->Alert = new Alert(
+					__('<code>Custom Preferences</code> depends on both <code>%s</code> and <code>%s</code>. Make sure you have these extension installed and enabled.', array(__('Static Section'), __('Publish Tabs'))), 
+					Alert::ERROR
+				);
 
-				if(!$this->__isEnabled($static_section) || !$this->__isEnabled($publish_tabs)) {
-
-					Administration::instance()->Page->Alert = new Alert(
-						__('<code>Custom Preferences</code> depends on both <code>%s</code> and <code>%s</code>. Make sure you have these extension installed and enabled.', array(__('Static Section'), __('Publish Tabs'))), 
-						Alert::ERROR
-					);
-
-				}
 			}
 
 		}

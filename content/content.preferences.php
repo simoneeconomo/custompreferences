@@ -3,6 +3,7 @@
 	require_once(CONTENT . '/content.systempreferences.php');
 	require_once(TOOLKIT . '/class.sectionmanager.php');
 	require_once(TOOLKIT . '/class.entrymanager.php');
+	require_once(TOOLKIT . '/class.extensionmanager.php');
 
 	class contentExtensionCustomPreferencesPreferences extends AdministrationPage {
 
@@ -51,6 +52,16 @@
 		}
 
 		public function view() {
+			$ExtensionManager = $this->_Parent->ExtensionManager;
+			$static_section = $ExtensionManager->fetchStatus('static_section');
+			$publish_tabs = $ExtensionManager->fetchStatus('publish_tabs');
+
+			if ($static_section != EXTENSION_ENABLED || $publish_tabs != EXTENSION_ENABLED) {
+				throw new Exception(
+					__('<code>Custom Preferences</code> depends on both <code>%s</code> and <code>%s</code>. Make sure you have these extension installed and enabled.', array(__('Static Section'), __('Publish Tabs')))
+				);
+			}
+
 			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/publish_tabs/assets/publish-tabs.css', 'screen', 200);
 			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/custompreferences/assets/custompreferences.css', 'screen', 200);
 
@@ -65,6 +76,18 @@
 
 			$sections = $this->__getSections();
 			$currentsection = isset($this->_context[0]) ? $this->_context[0] : $sections[0]['id'];
+
+			if ($currentsection == null) {
+				$message = new XMLElement('p', __(
+					'It looks like no sections are available that are both static and hidden. <a href="%s">Click here to create some.</a>',
+						array(
+							URL . '/symphony/blueprints/sections/new/'
+						)
+				));
+				$this->Form->appendChild($message);
+
+				return;
+			}
 
 			$menu = new XMLElement('ul', NULL, array('class' => 'tabs staticsections', 'id' => 'publish-tabs-controls'));
 
@@ -135,7 +158,7 @@
 
 			} else {
 				$message = new XMLElement('p', __(
-					'It looks like you\'re trying to create an entry. Perhaps you want fields first? <a href="%s">Click here to create some.</a>',
+					'It looks like your single entry section has no fields. <a href="%s">Click here to create some.</a>',
 					array(
 						URL . '/symphony/blueprints/sections/edit/' . $currentsection . '/'
 					)
