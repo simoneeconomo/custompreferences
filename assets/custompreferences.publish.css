@@ -1,0 +1,5 @@
+.tabs li a, .tabs li a:hover {
+	text-decoration: none;
+	color: #666;
+	display: block;
+}
