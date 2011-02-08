@@ -62,8 +62,8 @@
 				);
 			}
 
-			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/publish_tabs/assets/publish-tabs.css', 'screen', 200);
-			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/custompreferences/assets/custompreferences.css', 'screen', 200);
+			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/publish_tabs/assets/publish_tabs.publish.css', 'screen', 200);
+			$this->_Parent->Page->addStylesheetToHead(URL . '/extensions/custompreferences/assets/custompreferences.publish.css', 'screen', 200);
 
 			$formHasErrors = (is_array($this->_errors) && !empty($this->_errors));
 			
