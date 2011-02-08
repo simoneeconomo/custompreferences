@@ -113,6 +113,8 @@
 			$entry = $entryManager->fetch(NULL, $currentsection);
 			$entry = $entry[0];
 
+			$this->Form->appendChild(new XMLElement('h2', $sectionManager->fetch($currentsection)->get('name')));
+
 			if ($fields) {
 
 				if (isset($_POST['fields'])) {

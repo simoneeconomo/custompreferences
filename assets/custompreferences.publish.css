@@ -3,3 +3,7 @@
 	color: #666;
 	display: block;
 }
+
+h2 {
+	border-bottom: none;
+}
