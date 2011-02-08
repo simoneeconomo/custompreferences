@@ -52,7 +52,7 @@
 		}
 
 		public function view() {
-			$ExtensionManager = $this->_Parent->ExtensionManager;
+			$ExtensionManager = Symphony::ExtensionManager();
 			$static_section = $ExtensionManager->fetchStatus('static_section');
 			$publish_tabs = $ExtensionManager->fetchStatus('publish_tabs');
 
@@ -115,26 +115,14 @@
 
 			if ($fields) {
 
-				if (isset($entry)) {
-					if (isset($_POST['fields'])) {
-						$postfields = $_POST['fields'];
-
-						$e =& $entryManager->create();
-						$e->set('section_id', $entry->get('section_id'));
-						$e->set('id', $entry->get('id'));
-
-						$e->setDataFromPost($postfields, $error, true);
-						$entry = $e;
-					}
-				} else {
-					if (isset($_POST['fields'])) {
-						$entry = $entryManager->create();
-						$entry->set('section_id', $section_id);
-						$entry->setDataFromPost($_POST['fields'], $error, true);
-					} else {
-						$entry = $entryManager->create();
-						$entry->set('section_id', $section_id);
-					}
+				if (isset($_POST['fields'])) {
+					$entry = $entryManager->create();
+					$entry->set('section_id', $currentsection);
+					$entry->setDataFromPost($_POST['fields'], $error, true);
+				}
+				else if (!isset($entry)) {
+					$entry = $entryManager->create();
+					$entry->set('section_id', $section_id);
 				}
 
 				$group = null;
@@ -158,7 +146,7 @@
 
 			} else {
 				$message = new XMLElement('p', __(
-					'It looks like your single entry section has no fields. <a href="%s">Click here to create some.</a>',
+					'It looks like your static section has no fields. <a href="%s">Click here to create some.</a>',
 					array(
 						URL . '/symphony/blueprints/sections/edit/' . $currentsection . '/'
 					)
@@ -191,60 +179,75 @@
 					if (isset($entry)) {
 						$post = General::getPostData();
 						$fields = $post['fields'];
-					} else {
+					}
+					else {
 						$entry =& $entryManager->create();
 						$entry->set('section_id', $currentsection);
-						$entry->set('author_id', $this->_Parent->Author->get('id'));
+						$entry->set('author_id', Administration::instance()->Author->get('id'));
 						$entry->set('creation_date', DateTimeObj::get('Y-m-d H:i:s'));
 						$entry->set('creation_date_gmt', DateTimeObj::getGMT('Y-m-d H:i:s'));
 
 						$fields = $_POST['fields'];
 					}
 
-#					## Combine FILES and POST arrays, indexed by their custom field handles
-#					if(isset($_FILES['fields'])){
-#						$filedata = General::processFilePostData($_FILES['fields']);
+					## Combine FILES and POST arrays, indexed by their custom field handles
+					if(isset($_FILES['fields'])){
+						$filedata = General::processFilePostData($_FILES['fields']);
 
-#						foreach($filedata as $handle => $data){
-#							if(!isset($fields[$handle])) $fields[$handle] = $data;
-#							elseif(isset($data['error']) && $data['error'] == 4) $fields['handle'] = NULL;
-#							else{
+						foreach($filedata as $handle => $data){
+							if(!isset($fields[$handle])) $fields[$handle] = $data;
+							elseif(isset($data['error']) && $data['error'] == 4) $fields['handle'] = NULL;
+							else{
 
-#								foreach($data as $ii => $d){
-#									if(isset($d['error']) && $d['error'] == 4) $fields[$handle][$ii] = NULL;
-#									elseif(is_array($d) && !empty($d)){
+								foreach($data as $ii => $d){
+									if(isset($d['error']) && $d['error'] == 4) $fields[$handle][$ii] = NULL;
+									elseif(is_array($d) && !empty($d)){
 
-#										foreach($d as $key => $val)
-#											$fields[$handle][$ii][$key] = $val;
-#									}
-#								}
-#							}
-#						}
-#					}
+										foreach($d as $key => $val)
+											$fields[$handle][$ii][$key] = $val;
+									}
+								}
+							}
+						}
+					}
 
-					if(__ENTRY_FIELD_ERROR__ == $entry->checkPostData($fields, $this->_errors)) {
+					if(__ENTRY_FIELD_ERROR__ == $entry->checkPostData($fields, $this->_errors)):
 						$this->pageAlert(__('Some errors were encountered while attempting to save.'), Alert::ERROR);
 
-					} elseif(__ENTRY_OK__ != $entry->setDataFromPost($fields, $error)) {
+					elseif(__ENTRY_OK__ != $entry->setDataFromPost($fields, $error)):
 						$this->pageAlert($error['message'], Alert::ERROR);
 
-					} else {
+					else:
+						/**
+						 * Just prior to creation of an Entry
+						 *
+						 * @delegate EntryPreCreate
+						 * @param string $context
+						 * '/publish/new/'
+						 * @param Section $section
+						 * @param Entry $entry
+						 * @param array $fields
+						 */
+						Symphony::ExtensionManager()->notifyMembers('EntryPreCreate', '/publish/new/', array('section' => $section, 'entry' => &$entry, 'fields' => &$fields));
 
-						###
-						# Delegate: EntryPreEdit
-						# Description: Just prior to editing of an Entry.
-						$this->_Parent->ExtensionManager->notifyMembers('EntryPreEdit', '/publish/edit/', array('section' => $section, 'entry' => &$entry, 'fields' => $fields));
-
-						if(!$entry->commit()) {
+						if(!$entry->commit()){
 							define_safe('__SYM_DB_INSERT_FAILED__', true);
 							$this->pageAlert(NULL, Alert::ERROR);
-						} else {
 
-							###
-							# Delegate: EntryPostEdit
-							# Description: Editing an entry. Entry object is provided.
-							$this->_Parent->ExtensionManager->notifyMembers('EntryPostEdit', '/publish/edit/', array('section' => $section, 'entry' => $entry, 'fields' => $fields));
+						}
 
+						else{
+							/**
+							 * Creation of an Entry. New Entry object is provided.
+							 *
+							 * @delegate EntryPostCreate
+							 * @param string $context
+							 * '/publish/new/'
+							 * @param Section $section
+							 * @param Entry $entry
+							 * @param array $fields
+							 */
+							Symphony::ExtensionManager()->notifyMembers('EntryPostCreate', '/publish/new/', array('section' => $section, 'entry' => $entry, 'fields' => $fields));
 
 							$prepopulate_field_id = $prepopulate_value = NULL;
 							if(isset($_POST['prepopulate'])){
@@ -260,7 +263,7 @@
 
 						}
 
-					}
+					endif;
 
 				}
 			}
