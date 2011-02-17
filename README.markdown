@@ -14,6 +14,13 @@ Enable the extension from your "Extensions" page, then go to "System -> Custom P
 
 Please note that _Publish Tabs_ fields are treated as fieldsets. Every field that comes after a Publish Tab in the section editor will be added to the same fieldset until a new Publish Tab follows.
 
+## Compatibility
+
+ Extension version | Symphony version
+ ----------------- | ----------------
+ 0.2.2             | 2.2.x
+ 0.2.1             | 2.1.x
+
 ## Installation
 
 Custom Preferences depends on both [Static Sections](http://github.com/knupska/static_section/tree) and [Publish Tabs](http://github.com/nickdunn/publish_tabs). In order to make it run properly you must have these extension installed and enabled.
