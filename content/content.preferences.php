@@ -52,6 +52,9 @@
 		}
 
 		public function view() {
+			$this->Form->setAttribute('enctype', 'multipart/form-data');
+			$this->Form->appendChild(Widget::Input('MAX_FILE_SIZE', Symphony::Configuration()->get('max_upload_size', 'admin'), 'hidden'));
+
 			$ExtensionManager = Symphony::ExtensionManager();
 			$static_section = $ExtensionManager->fetchStatus('static_section');
 			$publish_tabs = $ExtensionManager->fetchStatus('publish_tabs');
@@ -104,7 +107,7 @@
 				$menu->appendChild($listitem);
 			}
 
-			$this->Form->appendChild($menu);
+			$this->Contents->appendChild($menu);
 
 			$sectionManager = new SectionManager($this->_Parent);
 			$fields = $sectionManager->fetch($currentsection)->fetchFields();
@@ -113,7 +116,7 @@
 			$entry = $entryManager->fetch(NULL, $currentsection);
 			$entry = $entry[0];
 
-			$this->Form->appendChild(new XMLElement('h2', $sectionManager->fetch($currentsection)->get('name')));
+			$this->Contents->appendChild(new XMLElement('h2', $sectionManager->fetch($currentsection)->get('name')));
 
 			if ($fields) {
 

@@ -5,8 +5,8 @@
 This extension adds a backend page that allows you to edit static sections as if they were system preferences. The purpose of this extension is to provide authors with a nice interface for editing single entry sections that should be treated like static content.
 
 * Author: Simone Economo
-* Version: 0.2.2
-* Release date: 2011-02-08
+* Version: 0.2.2.2
+* Release date: 2011-05-31
 
 ## Usage
 

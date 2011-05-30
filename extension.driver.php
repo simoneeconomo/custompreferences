@@ -6,7 +6,7 @@
 
 		public function about(){
 			return array('name' => 'Custom Preferences',
-						 'version' => '0.2.2',
+						 'version' => '0.2.2.2',
 						 'author' => array(
 							'name' => 'Simone Economo',
 							'website' => 'http://www.lineheight.net',
